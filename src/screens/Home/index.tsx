@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { TouchableOpacity, View, Dimensions } from "react-native";
 import { Svg, Circle, Path } from "react-native-svg";
 import Animated, {
@@ -6,6 +6,7 @@ import Animated, {
   useSharedValue,
   interpolate,
   withTiming,
+  withRepeat,
   Easing,
 } from "react-native-reanimated";
 
@@ -22,6 +23,7 @@ import { Header } from "../components/Header";
 const { width } = Dimensions.get("screen");
 
 export function Home() {
+  const [percentage, setPercentage] = useState(0);
   const heightAnimated = useSharedValue(100);
   const waveAnimated = useSharedValue(5);
 
@@ -60,6 +62,14 @@ export function Home() {
     };
   });
 
+  const svgContainerProps = useAnimatedProps(() => {
+    return {
+      width,
+      height: heightAnimated.value,
+      viewBox: `0 0 ${width} ${heightAnimated.value}`,
+    };
+  });
+
   const secondWaveProps = useAnimatedProps(() => {
     return {
       d: `
@@ -81,27 +91,33 @@ export function Home() {
     buttonBorderAnimated.value = 0;
     waveAnimated.value = 5;
 
-
     buttonBorderAnimated.value = withTiming(1, {
       duration: 500,
       easing: Easing.ease,
     });
 
+    waveAnimated.value = withRepeat(
+      withTiming(17, {
+        duration: 500,
+        easing: Easing.ease,
+      }),
+      2,
+      true
+    );
+
     heightAnimated.value = withTiming(heightAnimated.value + 100, {
       duration: 1000,
       easing: Easing.ease,
     });
+
+    setPercentage(Math.trunc(heightAnimated.value * 0.1));
   }
 
   return (
     <View style={styles.container}>
-      <Header ml={0} percent={0} />
+      <Header ml={percentage === 0 ? 0 : (heightAnimated.value * 2)} percent={percentage} />
 
-      <AnimatedSvg
-        width={width}
-        height={heightAnimated.value}
-        viewBox={`0 0 ${width} ${heightAnimated.value}`}
-      >
+      <AnimatedSvg animatedProps={svgContainerProps}>
         <AnimatedPath
           animatedProps={firstWaveProps}
           fill={theme.colors.blue100}
